@@ -8,22 +8,32 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage(''); // Clear previous messages
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setMessage('Please provide a password.');
+      return;
+    }
+    setMessage('');
+    setLoading(true);
     try {
       const res = await api.post('/login', { email, password });
       localStorage.setItem('token', res.data.token);
-      setMessage('Yay! You’re signed in! Let’s go to the user list.');
-      setTimeout(() => navigate('/users'), 1000);
+      setMessage(res.data.message || 'Yay! You’re signed in! Let’s go to the user list.');
+      setTimeout(() => navigate('/users'), 2000);
     } catch (err) {
       console.error('Login error:', err.response?.data || err.message);
-      if (err.response?.status === 401 && err.response?.data?.message.includes('Email not found')) {
-        setMessage('Oops! We don’t know this email. Try signing up first!');
-      } else if (err.response?.status === 401 && err.response?.data?.message.includes('Incorrect password')) {
-        setMessage('Oops! That password is wrong. Try a different one.');
+      if (!err.response) {
+        setMessage('Oops! Can’t reach the server. Check your internet and try again.');
+      } else if (err.response?.status === 400 && err.response?.data?.message.includes('Invalid credentials')) {
+        setMessage('Oops! Invalid email or password. Please try again.');
       } else if (err.response?.status === 403) {
         setMessage('Oh no! Your account is locked. Ask for help to unlock it.');
       } else if (err.response?.status === 400) {
@@ -33,6 +43,8 @@ const Login = () => {
       } else {
         setMessage('Sorry, there was a problem signing you in. Please try again.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,6 +63,8 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={loading}
+                aria-label="Email address"
               />
             </Form.Group>
             <Form.Group controlId="formPassword" className="mb-3">
@@ -61,21 +75,23 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={loading}
+                aria-label="Password"
               />
             </Form.Group>
-            <Button variant="primary" type="submit" className="w-100">
-              SIGN IN
+            <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+              {loading ? 'Signing In...' : 'SIGN IN'}
             </Button>
             {message && (
-              <p className={message.includes('Yay') ? 'text-success mt-3' : 'text-danger mt-3'}>
+              <p className={message.includes('Yay') || message.includes('signed in') ? 'text-success mt-3' : 'text-danger mt-3'}>
                 {message}
               </p>
             )}
           </Form>
           <div className="links">
-            <a href="/register">Don't have an account? Sign up</a>
+            <a href="/register" aria-label="Sign up for a new account">Don't have an account? Sign up</a>
             <br />
-            <a href="/forgot-password">Forgot password?</a>
+            <a href="/forgot-password" aria-label="Reset your password">Forgot password?</a>
           </div>
         </Col>
         <Col md={6} className="right-section"></Col>
