@@ -5,7 +5,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: 30000, // Increased to 30 seconds to account for Render cold starts
+  withCredentials: true, // Enable if cookies or auth requires credentials
 });
 
 api.interceptors.request.use(
@@ -30,6 +31,7 @@ api.interceptors.response.use(
       message: error.response?.data?.message || error.message,
       url: error.config?.url,
       isNetworkError: !error.response && error.request,
+      config: error.config,
     });
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
