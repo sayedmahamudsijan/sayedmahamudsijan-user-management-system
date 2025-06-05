@@ -1,19 +1,40 @@
 import React, { useState } from 'react';
 import { Form, Button, Container, Row, Col } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import './Auth.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage('Please enter a valid email address.');
+      return;
+    }
+    setMessage('');
+    setLoading(true);
     try {
-      await api.post('/forgot-password', { email });
-      setMessage('Password reset link sent to your email!');
+      const res = await api.post('/forgot-password', { email });
+      setMessage(res.data.message || 'Password reset link sent to your email!');
+      setTimeout(() => navigate('/login'), 2000); // Redirect to login after 2 seconds
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Failed to send reset link');
+      console.error('Forgot password error:', err.response?.data || err.message);
+      if (err.response?.status === 404) {
+        setMessage('Email not found. Please check your email address.');
+      } else if (err.response?.status === 400) {
+        setMessage('Please provide a valid email address.');
+      } else if (err.response?.status === 500) {
+        setMessage('Uh-oh! The server isn’t working right now. Try again later.');
+      } else {
+        setMessage('Failed to send reset link. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -32,15 +53,21 @@ const ForgotPassword = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={loading}
+                aria-label="Email address"
               />
             </Form.Group>
-            <Button variant="primary" type="submit" className="w-100">
-              SEND RESET LINK
+            <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+              {loading ? 'Sending...' : 'SEND RESET LINK'}
             </Button>
-            {message && <p className={message.includes('sent') ? 'text-success' : 'text-danger'}>{message}</p>}
+            {message && (
+              <p className={message.includes('sent') ? 'text-success mt-3' : 'text-danger mt-3'}>
+                {message}
+              </p>
+            )}
           </Form>
           <div className="links">
-            <a href="/login">Back to Sign In</a>
+            <a href="/login" aria-label="Back to Sign In">Back to Sign In</a>
           </div>
         </Col>
         <Col md={6} className="right-section"></Col>
