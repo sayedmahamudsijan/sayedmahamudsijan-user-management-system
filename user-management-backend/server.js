@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json());
 
 const allowedOrigins = [
-  'https://user-management-frontend-1i015d1vb.vercel.app',
+  'https://user-management-system-pi2rit61z.vercel.app',
   'http://localhost:3000'
 ];
 
@@ -18,12 +18,13 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('Blocked CORS for origin:', origin); // helpful for debugging
       callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true, // Enable if using cookies or credentials
+  credentials: true
 }));
 
 (async () => {
