@@ -50,6 +50,20 @@ app.use(cors({
       );
     `);
     console.log('Users table schema ensured.');
+
+    // Add missing last_login column if it doesn't exist
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_name = 'users' AND column_name = 'last_login'
+        ) THEN
+          ALTER TABLE users ADD COLUMN last_login TIMESTAMP;
+        END IF;
+      END $$;
+    `);
+    console.log('Verified last_login column in users table.');
   } catch (err) {
     console.error('Database initialization error:', err.message);
   }
