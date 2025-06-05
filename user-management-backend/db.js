@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  connectionString: process.POSTGRES_URL,
+  connectionString: process.env.POSTGRES_URL,
   ssl: { rejectUnauthorized: false }
 });
 
