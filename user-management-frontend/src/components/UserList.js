@@ -10,25 +10,28 @@ import './UserList.css';
 const UserList = () => {
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortOrder, setSortOrder] = useState('desc'); // Default to desc for last_login
   const [searchTerm, setSearchTerm] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false); // For action buttons
   const navigate = useNavigate();
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/users');
-      const parsedUsers = Array.isArray(res.data) ? res.data.map(user => ({
-        ...user,
-        activity_data: user.activity_data ? JSON.parse(user.activity_data || '[0, 0, 0]') : [0, 0, 0]
-      })) : [];
-      setUsers(parsedUsers);
+      setUsers(Array.isArray(res.data) ? res.data : []);
       setMessage('');
     } catch (err) {
-      console.error('Fetch users error:', err.message);
-      setMessage(`Failed to load users: ${err.message}`);
+      console.error('Fetch users error:', err.response?.data || err.message);
+      if (err.response?.status === 401) {
+        setMessage('Session expired. Please log in again.');
+      } else if (err.response?.status === 500) {
+        setMessage('Uh-oh! The server isn’t load users right now. Try again later.');
+      } else {
+        setMessage('Failed to load users. Please try again.');
+      }
       setUsers([]);
     } finally {
       setLoading(false);
@@ -55,50 +58,79 @@ const UserList = () => {
 
   const handleBlock = async () => {
     if (selectedUsers.length === 0) {
-      setMessage('Please select at least one user');
+      setMessage('Please select at least one user.');
       return;
     }
+    setActionLoading(true);
     try {
       const res = await api.put('/users/block', { userIds: selectedUsers });
-      setMessage(res.data.message);
+      setMessage(res.data.message || 'Users blocked successfully.');
       setSelectedUsers([]);
-      fetchUsers();
+      await fetchUsers();
     } catch (err) {
-      setMessage(`Failed to block users: ${err.message}`);
+      console.error('Block users error:', err.response?.data || err.message);
+      if (err.response?.status === 400) {
+        setMessage('Please select valid users to block.');
+      } else if (err.response?.status === 500) {
+        setMessage('Uh-oh! The server can’t block users right now. Try again later.');
+      } else {
+        setMessage('Failed to block users. Please try again.');
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleUnblock = async () => {
     if (selectedUsers.length === 0) {
-      setMessage('Please select at least one user');
+      setMessage('Please select at least one user.');
       return;
     }
+    setActionLoading(true);
     try {
       const res = await api.put('/users/unblock', { userIds: selectedUsers });
-      setMessage(res.data.message);
+      setMessage(res.data.message || 'Users unblocked successfully.');
       setSelectedUsers([]);
-      fetchUsers();
+      await fetchUsers();
     } catch (err) {
-      setMessage(`Failed to unblock users: ${err.message}`);
+      console.error('Unblock users error:', err.response?.data || err.message);
+      if (err.response?.status === 400) {
+        setMessage('Please select valid users to unblock.');
+      } else if (err.response?.status === 500) {
+        setMessage('Uh-oh! The server can’t unblock users right now. Try again later.');
+      } else {
+        setMessage('Failed to unblock users. Please try again.');
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleDelete = async () => {
     if (selectedUsers.length === 0) {
-      setMessage('Please select at least one user to delete');
+      setMessage('Please select at least one user to delete.');
       return;
     }
     if (!window.confirm('Are you sure you want to delete the selected users? This action cannot be undone.')) {
       return;
     }
+    setActionLoading(true);
     try {
       const res = await api.delete('/users', { data: { userIds: selectedUsers } });
-      setMessage(res.data.message);
+      setMessage(res.data.message || 'Users deleted successfully.');
       setSelectedUsers([]);
-      await fetchUsers(); // Ensure refresh happens after deletion
+      await fetchUsers();
     } catch (err) {
-      console.error('Delete error details:', err.response?.data || err.message);
-      setMessage(`Failed to delete users: ${err.response?.data?.message || err.message}`);
+      console.error('Delete users error:', err.response?.data || err.message);
+      if (err.response?.status === 400) {
+        setMessage('Please select valid users to delete.');
+      } else if (err.response?.status === 500) {
+        setMessage('Uh-oh! The server can’t delete users right now. Try again later.');
+      } else {
+        setMessage('Failed to delete users. Please try again.');
+      }
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -111,25 +143,27 @@ const UserList = () => {
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const sortedUsers = [...filteredUsers].sort((a, b) =>
-    sortOrder === 'asc' ? a.email.localeCompare(b.email) : b.email.localeCompare(a.email)
-  );
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    const dateA = a.last_login ? new Date(a.last_login) : new Date(0);
+    const dateB = b.last_login ? new Date(b.last_login) : new Date(0);
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+  });
 
   if (loading) return <div>Loading users...</div>;
 
   return (
     <div className="user-list-container">
       <div className="action-buttons">
-        <Button variant="primary" onClick={handleBlock} disabled={selectedUsers.length === 0}>
-          <FontAwesomeIcon icon={faLock} /> Block
+        <Button variant="primary" onClick={handleBlock} disabled={selectedUsers.length === 0 || actionLoading}>
+          <FontAwesomeIcon icon={faLock} /> {actionLoading ? 'Blocking...' : 'Block'}
         </Button>
-        <Button variant="outline-success" onClick={handleUnblock} disabled={selectedUsers.length === 0}>
-          <FontAwesomeIcon icon={faUnlock} /> Unblock
+        <Button variant="outline-success" onClick={handleUnblock} disabled={selectedUsers.length === 0 || actionLoading}>
+          <FontAwesomeIcon icon={faUnlock} /> {actionLoading ? 'Unblocking...' : 'Unblock'}
         </Button>
-        <Button variant="danger" onClick={handleDelete} disabled={selectedUsers.length === 0}>
-          <FontAwesomeIcon icon={faTrash} /> Delete
+        <Button variant="danger" onClick={handleDelete} disabled={selectedUsers.length === 0 || actionLoading}>
+          <FontAwesomeIcon icon={faTrash} /> {actionLoading ? 'Deleting...' : 'Delete'}
         </Button>
-        <Button variant="success" onClick={handleAddUser}>
+        <Button variant="success" onClick={handleAddUser} disabled={actionLoading}>
           <FontAwesomeIcon icon={faUserPlus} /> Add User
         </Button>
       </div>
@@ -139,8 +173,11 @@ const UserList = () => {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className="search-input"
+        disabled={actionLoading}
       />
-      {message && <p className={message.includes('successfully') ? 'text-success' : 'text-danger'}>{message}</p>}
+      {message && (
+        <p className={message.includes('successfully') ? 'text-success' : 'text-danger'}>{message}</p>
+      )}
       <Table striped bordered hover>
         <thead>
           <tr>
@@ -149,13 +186,14 @@ const UserList = () => {
                 type="checkbox"
                 checked={selectedUsers.length === users.length && users.length > 0}
                 onChange={handleSelectAll}
+                disabled={actionLoading}
               />
             </th>
             <th>Name</th>
-            <th onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
-              Email {sortOrder === 'asc' ? <FontAwesomeIcon icon={faSortUp} /> : <FontAwesomeIcon icon={faSortDown} />}
+            <th>Email</th>
+            <th onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}>
+              Last Login {sortOrder === 'desc' ? <FontAwesomeIcon icon={faSortDown} /> : <FontAwesomeIcon icon={faSortUp} />}
             </th>
-            <th>Last Seen</th>
           </tr>
         </thead>
         <tbody>
@@ -167,6 +205,7 @@ const UserList = () => {
                     type="checkbox"
                     checked={selectedUsers.includes(user.id)}
                     onChange={() => handleSelect(user.id)}
+                    disabled={actionLoading}
                   />
                 </td>
                 <td>
@@ -176,7 +215,7 @@ const UserList = () => {
                   )}
                 </td>
                 <td>{user.email}</td>
-                <td>{moment(user.last_seen).fromNow()}</td>
+                <td>{user.last_login ? moment(user.last_login).fromNow() : 'Never'}</td>
               </tr>
             ))
           ) : (
