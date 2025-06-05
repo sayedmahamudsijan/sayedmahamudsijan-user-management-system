@@ -1,98 +1,115 @@
 import React, { useState } from 'react';
+import { Form, Button, Container, Row, Col } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import './Auth.css';
 
 const Register = () => {
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage(''); // Clear previous messages
+    if (!name || !email || !password) {
+      setMessage('Please fill in all the boxes (name, email, and password).');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage('Please enter a valid email address.');
+      return;
+    }
+    setMessage('');
+    setLoading(true);
     try {
-      const res = await api.post('/register', { name, email, password });
-      setMessage(res.data.message || 'Registration successful! Please login.');
-      setTimeout(() => navigate('/login'), 2000);
+      const res = await api.post('/register', { email, password, name });
+      setMessage(res.data.message || 'Yay! You signed up! Let’s go to the user list.');
+      setTimeout(() => navigate('/users'), 2000);
     } catch (err) {
-      if (err.response) {
-        // Server responded with a status other than 2xx
-        setMessage(err.response.data.message || 'Registration failed. Please try again.');
-      } else if (err.request) {
-        // No response received (network error, CORS, etc.)
-        setMessage('Cannot reach the server. Check your internet or server status.');
+      console.error('Registration error details:', {
+        status: err.response?.status,
+        message: err.response?.data?.message,
+        error: err.message,
+        fullResponse: err.response?.data
+      });
+      if (err.response?.status === 400 && err.response?.data?.message === 'Email already exists') {
+        setMessage('Oops! This email is already taken. Try a different email.');
+      } else if (err.response?.status === 400) {
+        setMessage('Please fill in all the boxes (name, email, and password).');
+      } else if (err.response?.status === 500) {
+        setMessage('Uh-oh! The server isn’t working right now. Try again in a little bit.');
+      } else if (!err.response) {
+        setMessage('Oops! Can’t reach the server. Check your internet and try again.');
       } else {
-        // Other errors (e.g., request setup)
-        setMessage('An error occurred: ' + err.message);
+        setMessage('Sorry, there was a problem signing you up. Please try again.');
       }
-      console.error('Registration error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-header text-center">
-              <h3>Sign UP to The App</h3>
-            </div>
-            <div className="card-body">
-              {message && (
-                <div className={`alert ${message.includes('successful') ? 'alert-success' : 'alert-danger'}`} role="alert">
-                  {message}
-                </div>
-              )}
-              <form onSubmit={handleSubmit}>
-                <div className="form-group mb-3">
-                  <label htmlFor="name">Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group mb-3">
-                  <label htmlFor="email">E-mail</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group mb-3">
-                  <label htmlFor="password">Password</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <button type="submit" className="btn btn-primary w-100">
-                  Sign UP to The App
-                </button>
-              </form>
-              <div className="text-center mt-3">
-                <p>
-                  Already have an account? <a href="/login">Sign in</a>
-                </p>
-              </div>
-            </div>
+    <Container fluid className="auth-container">
+      <Row className="h-100">
+        <Col md={6} className="left-section">
+          <div className="logo">THE APP</div>
+          <h2>Start your journey<br /><strong>Sign UP to The App</strong></h2>
+          <Form onSubmit={handleSubmit}>
+            <Form.Group controlId="formName" className="mb-3">
+              <Form.Label>Name</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                disabled={loading}
+                aria-label="Name"
+              />
+            </Form.Group>
+            <Form.Group controlId="formEmail" className="mb-3">
+              <Form.Label>E-mail</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="test@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+                aria-label="Email address"
+              />
+            </Form.Group>
+            <Form.Group controlId="formPassword" className="mb-3">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                aria-label="Password"
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+              {loading ? 'Signing Up...' : 'SIGN UP'}
+            </Button>
+            {message && (
+              <p className={message.includes('Yay') || message.includes('signed up') ? 'text-success mt-3' : 'text-danger mt-3'}>
+                {message}
+              </p>
+            )}
+          </Form>
+          <div className="links">
+            <a href="/login" aria-label="Already have an account? Sign in">Already have an account? Sign in</a>
           </div>
-        </div>
-      </div>
-    </div>
+        </Col>
+        <Col md={6} className="right-section"></Col>
+      </Row>
+    </Container>
   );
 };
 
