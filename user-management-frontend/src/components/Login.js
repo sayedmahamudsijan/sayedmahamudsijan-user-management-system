@@ -29,7 +29,12 @@ const Login = () => {
       setMessage(res.data.message || 'Yay! You’re signed in! Let’s go to the user list.');
       setTimeout(() => navigate('/users'), 2000);
     } catch (err) {
-      console.error('Login error:', err.response?.data || err.message);
+      console.error('Login error details:', {
+        status: err.response?.status,
+        message: err.response?.data?.message,
+        error: err.message,
+        fullResponse: err.response?.data,
+      });
       if (!err.response) {
         setMessage('Oops! Can’t reach the server. Check your internet and try again.');
       } else if (err.response?.status === 400 && err.response?.data?.message.includes('Invalid credentials')) {
@@ -38,8 +43,8 @@ const Login = () => {
         setMessage('Oh no! Your account is locked. Ask for help to unlock it.');
       } else if (err.response?.status === 400) {
         setMessage('Please fill in both email and password boxes.');
-      } else if (err.response?.status === 500) {
-        setMessage('Uh-oh! The server isn’t working right now. Try again in a little bit.');
+      } else if (err.response?.status === 500 && err.response?.data?.message?.startsWith('Server error:')) {
+        setMessage(err.response.data.message || 'Uh-oh! The server isn’t working right now. Try again in a little bit.');
       } else {
         setMessage('Sorry, there was a problem signing you in. Please try again.');
       }
