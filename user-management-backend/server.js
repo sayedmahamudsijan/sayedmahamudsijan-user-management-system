@@ -20,7 +20,10 @@ app.use(cors({
     } else {
       callback(new Error('Not allowed by CORS'));
     }
-  }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // Enable if using cookies or credentials
 }));
 
 (async () => {
@@ -51,7 +54,6 @@ app.use(cors({
     `);
     console.log('Users table schema ensured.');
 
-    // Add missing last_login column if it doesn't exist
     await pool.query(`
       DO $$ BEGIN
         IF NOT EXISTS (
