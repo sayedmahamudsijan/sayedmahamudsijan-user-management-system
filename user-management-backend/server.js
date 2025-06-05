@@ -1,9 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const pool = require('./services/db');
-const { register, login, authMiddleware, forgotPassword } = require('./services/auth');
-const { getUsers, blockUsers, unblockUsers, deleteUsers } = require('./services/user');
+const pool = require('./db');
+const { register, login, authMiddleware, forgotPassword } = require('./auth');
+const { getUsers, blockUsers, unblockUsers, deleteUsers } = require('./user');
 
 const app = express();
 app.use(express.json());
