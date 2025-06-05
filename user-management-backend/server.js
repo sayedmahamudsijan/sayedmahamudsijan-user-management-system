@@ -62,10 +62,10 @@ app.use(cors({
 app.post('/register', register);
 app.post('/login', login);
 app.post('/forgot-password', forgotPassword);
-app.get('/users', authMiddleware, getUsers);
-app.put('/users/block', authMiddleware, blockUsers);
-app.put('/users/unblock', authMiddleware, unblockUsers);
-app.delete('/users', authMiddleware, deleteUsers);
+app.get('/users', ...getUsers);
+app.put('/users/block', ...blockUsers);
+app.put('/users/unblock', ...unblockUsers);
+app.delete('/users', ...deleteUsers);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
