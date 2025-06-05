@@ -1,17 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const pool = require('./db');
-const { register, login, authMiddleware, forgotPassword } = require('./auth');
-const { getUsers, blockUsers, unblockUsers, deleteUsers } = require('./user');
+const pool = require('./services/db');
+const { register, login, authMiddleware, forgotPassword } = require('./services/auth');
+const { getUsers, blockUsers, unblockUsers, deleteUsers } = require('./services/user');
 
 const app = express();
 app.use(express.json());
 
-// CORS configuration
 const allowedOrigins = [
-  'https://user-management-frontend-1i015d1vb.vercel.app', // Frontend production URL
-  'http://localhost:3000' // For local development
+  'https://user-management-frontend-1i015d1vb.vercel.app',
+  'http://localhost:3000'
 ];
 
 app.use(cors({
@@ -24,7 +23,6 @@ app.use(cors({
   }
 }));
 
-// Test database connection
 (async () => {
   try {
     const client = await pool.connect();
@@ -36,7 +34,6 @@ app.use(cors({
   }
 })();
 
-// Initialize database schema
 (async () => {
   try {
     await pool.query(`
@@ -58,16 +55,18 @@ app.use(cors({
   }
 })();
 
-// Routes
+app.get('/', (req, res) => {
+  res.send('Backend is running');
+});
+
 app.post('/register', register);
 app.post('/login', login);
 app.post('/forgot-password', forgotPassword);
-app.get('/users', ...getUsers);
-app.put('/users/block', ...blockUsers);
-app.put('/users/unblock', ...unblockUsers);
-app.delete('/users', ...deleteUsers);
+app.get('/users', authMiddleware, getUsers);
+app.put('/users/block', authMiddleware, blockUsers);
+app.put('/users/unblock', authMiddleware, unblockUsers);
+app.delete('/users', authMiddleware, deleteUsers);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ message: 'Backend is running' });
 });
