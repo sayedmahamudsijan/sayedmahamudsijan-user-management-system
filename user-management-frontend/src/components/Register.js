@@ -9,15 +9,25 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!name || !email || !password) {
+      setMessage('Please fill in all the boxes (name, email, and password).');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage('Please enter a valid email address.');
+      return;
+    }
     setMessage('');
+    setLoading(true);
     try {
       const res = await api.post('/register', { email, password, name });
       setMessage(res.data.message || 'Yay! You signed up! Let’s go to the user list.');
-      setTimeout(() => navigate('/users'), 1000);
+      setTimeout(() => navigate('/users'), 2000);
     } catch (err) {
       console.error('Registration error details:', {
         status: err.response?.status,
@@ -25,7 +35,7 @@ const Register = () => {
         error: err.message,
         fullResponse: err.response?.data
       });
-      if (err.response?.status === 400 && err.response?.data?.message?.toLowerCase().includes('email already exists')) {
+      if (err.response?.status === 400 && err.response?.data?.message === 'Email already exists') {
         setMessage('Oops! This email is already taken. Try a different email.');
       } else if (err.response?.status === 400) {
         setMessage('Please fill in all the boxes (name, email, and password).');
@@ -36,6 +46,8 @@ const Register = () => {
       } else {
         setMessage('Sorry, there was a problem signing you up. Please try again.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,6 +66,8 @@ const Register = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                disabled={loading}
+                aria-label="Name"
               />
             </Form.Group>
             <Form.Group controlId="formEmail" className="mb-3">
@@ -64,6 +78,8 @@ const Register = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={loading}
+                aria-label="Email address"
               />
             </Form.Group>
             <Form.Group controlId="formPassword" className="mb-3">
@@ -74,19 +90,21 @@ const Register = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={loading}
+                aria-label="Password"
               />
             </Form.Group>
-            <Button variant="primary" type="submit" className="w-100">
-              SIGN UP
+            <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+              {loading ? 'Signing Up...' : 'SIGN UP'}
             </Button>
             {message && (
-              <p className={message.includes('Yay') ? 'text-success mt-3' : 'text-danger mt-3'}>
+              <p className={message.includes('Yay') || message.includes('signed up') ? 'text-success mt-3' : 'text-danger mt-3'}>
                 {message}
               </p>
             )}
           </Form>
           <div className="links">
-            <a href="/login">Already have an account? Sign in</a>
+            <a href="/login" aria-label="Already have an account? Sign in">Already have an account? Sign in</a>
           </div>
         </Col>
         <Col md={6} className="right-section"></Col>
