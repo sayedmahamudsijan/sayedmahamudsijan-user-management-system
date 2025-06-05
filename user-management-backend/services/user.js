@@ -3,9 +3,10 @@ const { authMiddleware } = require('./auth');
 
 const getUsers = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, name, email, last_login, status FROM users ORDER BY last_login DESC');
+    const { rows } = await pool.query('SELECT id, name, email, last_login, status FROM users ORDER BY last_login DESC');
     res.json(rows);
   } catch (err) {
+    console.error('Get users error:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -16,11 +17,13 @@ const blockUsers = async (req, res) => {
     return res.status(400).json({ message: 'Please provide userIds' });
   }
   try {
-    for (const userId of userIds) {
-      await pool.query('UPDATE users SET status = "blocked" WHERE id = ? AND status = "active"', [userId]);
-    }
+    await pool.query(
+      'UPDATE users SET status = $1 WHERE id = ANY($2::int[]) AND status = $3',
+      ['blocked', userIds, 'active']
+    );
     res.json({ message: 'Users blocked successfully' });
   } catch (err) {
+    console.error('Block users error:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -31,11 +34,13 @@ const unblockUsers = async (req, res) => {
     return res.status(400).json({ message: 'Please provide userIds' });
   }
   try {
-    for (const userId of userIds) {
-      await pool.query('UPDATE users SET status = "active" WHERE id = ? AND status = "blocked"', [userId]);
-    }
+    await pool.query(
+      'UPDATE users SET status = $1 WHERE id = ANY($2::int[]) AND status = $3',
+      ['active', userIds, 'blocked']
+    );
     res.json({ message: 'Users unblocked successfully' });
   } catch (err) {
+    console.error('Unblock users error:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -46,11 +51,13 @@ const deleteUsers = async (req, res) => {
     return res.status(400).json({ message: 'Please provide userIds' });
   }
   try {
-    for (const userId of userIds) {
-      await pool.query('DELETE FROM users WHERE id = ?', [userId]);
-    }
+    await pool.query(
+      'DELETE FROM users WHERE id = ANY($1::int[])',
+      [userIds]
+    );
     res.json({ message: 'Users deleted successfully' });
   } catch (err) {
+    console.error('Delete users error:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 };
