@@ -25,7 +25,7 @@ const Register = () => {
     setMessage('');
     setLoading(true);
     try {
-      const res = await api.post('/register', { email, password, name });
+      const res = await api.post('/register', { name, email, password }); // Match backend order
       setMessage(res.data.message || 'Yay! You signed up! Let’s go to the user list.');
       setTimeout(() => navigate('/users'), 2000);
     } catch (err) {
@@ -33,14 +33,14 @@ const Register = () => {
         status: err.response?.status,
         message: err.response?.data?.message,
         error: err.message,
-        fullResponse: err.response?.data
+        fullResponse: err.response?.data,
       });
       if (err.response?.status === 400 && err.response?.data?.message === 'Email already exists') {
         setMessage('Oops! This email is already taken. Try a different email.');
       } else if (err.response?.status === 400) {
         setMessage('Please fill in all the boxes (name, email, and password).');
-      } else if (err.response?.status === 500) {
-        setMessage('Uh-oh! The server isn’t working right now. Try again in a little bit.');
+      } else if (err.response?.status === 500 && err.response?.data?.message?.startsWith('Server error:')) {
+        setMessage(err.response.data.message || 'Uh-oh! The server isn’t working right now. Try again in a little bit.');
       } else if (!err.response) {
         setMessage('Oops! Can’t reach the server. Check your internet and try again.');
       } else {
