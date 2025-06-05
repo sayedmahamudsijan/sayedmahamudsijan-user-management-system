@@ -48,5 +48,8 @@
     "@babel/plugin-transform-numeric-separator": "^7.24.8",
     "@eslint/config-array": "^0.17.1",
     "@eslint/object-schema": "^2.1.4"
+  },
+  "engines": {
+    "node": ">=14.x"
   }
 }
