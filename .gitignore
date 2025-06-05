@@ -1,0 +1,10 @@
+# Ignore backend dependencies
+/user-management-backend/node_modules/
+
+# Ignore frontend dependencies
+/user-management-frontend/node_modules/
+
+# Ignore system & environment files
+.DS_Store
+.env
+*.log

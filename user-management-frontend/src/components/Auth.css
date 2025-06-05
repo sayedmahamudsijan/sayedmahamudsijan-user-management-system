@@ -1,0 +1,65 @@
+.auth-container {
+  height: 100vh;
+  background: linear-gradient(to right, #fff 50%, #2575fc 50%);
+}
+
+.left-section {
+  padding: 50px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.right-section {
+  background: linear-gradient(135deg, #2575fc, #6a11cb);
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2575fc;
+  margin-bottom: 30px;
+}
+
+h2 {
+  font-size: 28px;
+  color: #333;
+}
+
+h2 strong {
+  font-size: 36px;
+  color: #000;
+}
+
+.form-control {
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background-color: #2575fc;
+  border: none;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.btn-primary:hover {
+  background-color: #1a5bbf;
+}
+
+.links {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.links a {
+  color: #2575fc;
+  text-decoration: none;
+}
+
+.links a:hover {
+  text-decoration: underline;
+}
