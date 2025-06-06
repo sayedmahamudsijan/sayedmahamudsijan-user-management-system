@@ -10,6 +10,7 @@ app.use(express.json());
 
 const allowedOrigins = [
   'https://user-management-system-git-main-sayed-mahmuds-projects-2f91c151.vercel.app',
+  'https://user-management-system-murex-chi.vercel.app',
   'http://localhost:3000'
 ];
 
