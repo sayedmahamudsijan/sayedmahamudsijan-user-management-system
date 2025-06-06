@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json());
 
 const allowedOrigins = [
-  'https://user-management-system-pi2rit61z.vercel.app',
+  'https://user-management-system-git-main-sayed-mahmuds-projects-2f91c151.vercel.app',
   'http://localhost:3000'
 ];
 
